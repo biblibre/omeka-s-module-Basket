@@ -15,6 +15,9 @@ a.basket-list-toggle:visited {
 .basket-list-toggle.active:after {
     content:" ⊟";
 }
+span.basket-delete:after {
+    content:"X";
+}
 .basket-empty,
 .basket-list {
     display: none;

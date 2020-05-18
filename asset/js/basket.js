@@ -57,7 +57,6 @@
                                     .attr('data-url', basketItem.url_remove)
                                     .attr('title', basketList.attr('data-text-remove'))
                                     .attr('aria-label', basketList.attr('data-text-remove'))
-                                    .append('X')
                             )
                     );
                 }

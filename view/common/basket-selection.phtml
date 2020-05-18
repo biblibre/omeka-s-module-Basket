@@ -24,7 +24,7 @@ $container = new \Zend\Session\Container('Basket');
         <?php foreach ($container->records as $record): ?>
         <li data-id="<?= $record['id'] ?>">
             <a href="<?= $url('site/resource-id', ['controller' => $record['type'], 'id' => $record['id'], 'action' => 'show'], true) ?>"><?= $record['title'] ?></a>
-            <span class="basket-delete" data-id="<?= $record['id'] ?>" data-url="<?= $url('site/basket-id', ['action' => 'delete', 'id' => $record['id']], true) ?>" title="<?= $removeText ?>" aria-label="<?= $removeText ?>">X</span>
+            <span class="basket-delete" data-id="<?= $record['id'] ?>" data-url="<?= $url('site/basket-id', ['action' => 'delete', 'id' => $record['id']], true) ?>" title="<?= $removeText ?>" aria-label="<?= $removeText ?>"></span>
         </li>
         <?php endforeach; ?>
     </ul>

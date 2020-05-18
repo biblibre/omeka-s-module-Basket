@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-28 00:00+0100\n"
+"POT-Creation-Date: 2020-05-25 00:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,22 +17,37 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: Module.php:84 view/common/basket-item.phtml:25
-#: view/common/basket-link.phtml:10 view/guest/site/guest/basket.phtml:63
+#: data/scripts/upgrade.php:58 Module.php:71
+#, php-format
+msgid ""
+"This module is deprecated and will not receive new improvements any more. "
+"The module %1$sSelection%2$s replaces it."
+msgstr ""
+
+#: data/scripts/upgrade.php:64
+msgid "The upgrade from fhis old module to the new one is automatic."
+msgstr ""
+
+#: Module.php:132 view/common/basket-item.phtml:26
+#: view/common/basket-link.phtml:11 view/guest/site/guest/basket.phtml:59
 msgid "Basket"
 msgstr ""
 
-#: src/Generic/AbstractModule.php:498
+#: src/Controller/Site/BasketController.php:71
+msgid "Already in"
+msgstr ""
+
+#: src/Generic/AbstractModule.php:598
 #, php-format
 msgid "This module requires the module \"%s\"."
 msgstr ""
 
-#: src/Generic/AbstractModule.php:518
+#: src/Generic/AbstractModule.php:618
 #, php-format
 msgid "This module requires modules \"%s\"."
 msgstr ""
 
-#: src/Generic/AbstractModule.php:586
+#: src/Generic/AbstractModule.php:686
 #, php-format
 msgid ""
 "The module \"%s\" was automatically deactivated because the dependencies are "
@@ -43,25 +58,49 @@ msgstr ""
 msgid "Add to basket"
 msgstr ""
 
-#: view/common/basket-button.phtml:12
+#: view/common/basket-button.phtml:13
 msgid "Remove from basket"
 msgstr ""
 
-#: view/guest/site/guest/basket.phtml:66
+#: view/common/basket-selection.phtml:31
+msgid "Remove from selection"
+msgstr ""
+
+#: view/common/basket-selection.phtml:32
+msgid "Selected resources"
+msgstr ""
+
+#: view/common/basket-selection.phtml:42
+msgid "No selection"
+msgstr ""
+
+#: view/common/basket-selection.phtml:46
+msgid "Download basket"
+msgstr ""
+
+#: view/guest/site/guest/basket.phtml:62
 #, php-format
 msgid "%d items, %d media"
 msgstr ""
 
-#: view/guest/site/guest/basket.phtml:114
+#: view/guest/site/guest/basket.phtml:110
 msgid "The basket is empty."
 msgstr ""
 
-#: view/guest/site/guest/widget/basket.phtml:13
-msgid "My basket"
+#: view/guest/site/guest/widget/basket.phtml:14
+msgid "See content"
 msgstr ""
 
-#: src/Controller/Site/BasketController.php:63
-msgid "Already in"
+#: src/Form/SiteSettingsFieldset.php:12
+msgid "Basket module"
+msgstr ""
+
+#: src/Form/SiteSettingsFieldset.php:21
+msgid "Enable session basket for visitors"
+msgstr ""
+
+#: src/Form/SiteSettingsFieldset.php:22
+msgid "The selection is automatically saved for logged users."
 msgstr ""
 
 #: src/Site/Navigation/Link/Basket.php:23

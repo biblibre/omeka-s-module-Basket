@@ -40,6 +40,11 @@ return  [
             'Basket\Controller\Site\GuestBoard' => Controller\Site\GuestBoardController::class,
         ],
     ],
+    'controller_plugins' => [
+        'invokables' => [
+            'containerBasket' => Mvc\Controller\Plugin\ContainerBasket::class,
+        ],
+    ],
     'navigation_links' => [
         'invokables' => [
             'basket' => Site\Navigation\Link\Basket::class,
@@ -130,8 +135,6 @@ return  [
     'basket' => [
         'site_settings' => [
             'basket_visitor_allow' => true,
-            //  TODO Move this option to user settings.
-            'basket_user_fill_main' => false,
         ],
     ],
 ];

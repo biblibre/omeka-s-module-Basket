@@ -19,19 +19,10 @@ class SiteSettingsFieldset extends Fieldset
                 'type' => Element\Checkbox::class,
                 'options' => [
                     'label' => 'Enable session basket for visitors', // @translate
+                    'info' => 'The selection is automatically saved for logged users.', // @translate
                 ],
                 'attributes' => [
                     'id' => 'basket_visitor_allow',
-                ],
-            ])
-            ->add([
-                'name' => 'basket_user_fill_main',
-                'type' => Element\Checkbox::class,
-                'options' => [
-                    'label' => 'For authenticated users, fill the main basket directly', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'basket_user_fill_main',
                 ],
             ])
         ;

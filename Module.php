@@ -101,17 +101,8 @@ class Module extends AbstractModule
             return;
         }
 
-        $records = [];
-
-        // Check if the container is ready for the current user.
-        $container = new Container('Basket');
-        if (empty($container->init)) {
-            $container->user = sha1(microtime() . random_bytes(20));
-            $container->records = $records;
-            $container->init = true;
-        } elseif (!isset($container->records)) {
-            $container->records = $records;
-        }
+        $containerBasket = $this->getServiceLocator()->get('ControllerPluginManager')->get('containerBasket');
+        $containerBasket();
 
         echo $view->partial('common/basket-item');
     }

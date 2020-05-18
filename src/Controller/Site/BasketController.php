@@ -33,7 +33,6 @@ namespace Basket\Controller\Site;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;
-use Zend\Session\Container;
 use Zend\View\Model\JsonModel;
 
 class BasketController extends AbstractActionController
@@ -60,38 +59,27 @@ class BasketController extends AbstractActionController
 
         $api = $this->api();
         $results = [];
+        $userId = $user ? $user->getId() : false;
 
-        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
-        // User basket.
-        if ($userFillMain) {
-            $userId = $user->getId();
-            foreach ($resources as $resourceId => $resource) {
-                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
-                $data = $this->basketItemForResource($resource, true);
-                if ($basketItem) {
-                    $data['status'] = 'fail';
-                    $data['message'] = $this->translate('Already in'); // @translate
-                } else {
-                    $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
-                    $data['status'] = 'success';
+        // When a user is set, the session and the database are sync.
+        $container = $this->containerBasket();
+
+        foreach ($resources as $resourceId => $resource) {
+            $data = $this->basketItemForResource($resource, true);
+            if (isset($container->records[$resourceId])) {
+                $data['status'] = 'fail';
+                $data['message'] = $this->translate('Already in'); // @translate
+            } else {
+                $container->records[$resourceId] = $data;
+                $data['status'] = 'success';
+                if ($userId) {
+                    try {
+                        $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
+                    } catch (\Exception $e) {
+                    }
                 }
-                $results[$resourceId] = $data;
             }
-        }
-        // Session basket.
-        else {
-            $container = $this->containerSession();
-            foreach ($resources as $resourceId => $resource) {
-                $data = $this->basketItemForResource($resource, true);
-                if (isset($container->records[$resourceId])) {
-                    $data['status'] = 'fail';
-                    $data['message'] = $this->translate('Already in'); // @translate
-                } else {
-                    $container->records[$resourceId] = $data;
-                    $data['status'] = 'success';
-                }
-                $results[$resourceId] = $data;
-            }
+            $results[$resourceId] = $data;
         }
 
         if ($isMultiple) {
@@ -132,30 +120,22 @@ class BasketController extends AbstractActionController
 
         $api = $this->api();
         $results = [];
+        $userId = $user ? $user->getId() : false;
 
-        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
-        // User basket.
-        if ($userFillMain) {
-            $userId = $user->getId();
-            foreach ($resources as $resourceId => $resource) {
-                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
-                $data = $this->basketItemForResource($resource, false);
-                $data['status'] = 'success';
-                if ($basketItem) {
-                    $api->delete('basket_items', $basketItem->id());
+        // When a user is set, the session and the database are sync.
+        $container = $this->containerBasket();
+
+        foreach ($resources as $resourceId => $resource) {
+            $data = $this->basketItemForResource($resource, false);
+            $data['status'] = 'success';
+            unset($container->records[$resourceId]);
+            if ($userId) {
+                try {
+                    $api->delete('basket_items', ['user' => $userId, 'resource' => $resourceId]);
+                } catch (\Exception $e) {
                 }
-                $results[$resourceId] = $data;
             }
-        }
-        // Session basket.
-        else {
-            $container = $this->containerSession();
-            foreach ($resources as $resourceId => $resource) {
-                $data = $this->basketItemForResource($resource, false);
-                $data['status'] = 'success';
-                unset($container->records[$resourceId]);
-                $results[$resourceId] = $data;
-            }
+            $results[$resourceId] = $data;
         }
 
         if ($isMultiple) {
@@ -192,63 +172,47 @@ class BasketController extends AbstractActionController
 
         $api = $this->api();
         $results = [];
+        $userId = $user ? $user->getId() : false;
 
-        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
-        // User basket.
-        if ($userFillMain) {
-            $userId = $user->getId();
-            $add = [];
-            $delete = [];
-            foreach ($resources as $resourceId => $resource) {
-                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
-                if ($basketItem) {
-                    $delete[$resourceId] = $basketItem;
-                } else {
-                    $add[$resourceId] = $resource;
-                }
-            }
-            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $add */
-            foreach ($add as $resourceId => $resource) {
-                $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
-                $data = $this->basketItemForResource($resource, true);
-                $data['status'] = 'success';
-                $results[$resourceId] = $data;
-            }
-            /** @var \Basket\Api\Representation\BasketItemRepresentation[] $delete */
-            foreach ($delete as $resourceId => $basketItem) {
-                $data = $this->basketItemForResource($resources[$resourceId], false);
-                $api->delete('basket_items', $basketItem->id());
-                $data['status'] = 'success';
-                $results[$resourceId] = $data;
+        // When a user is set, the session and the database are sync.
+        $container = $this->containerBasket();
+
+        $add = [];
+        $delete = [];
+        foreach ($resources as $resourceId => $resource) {
+            if (isset($container->records[$resourceId])) {
+                $delete[$resourceId] = $resource;
+            } else {
+                $add[$resourceId] = $resource;
             }
         }
-        // Session basket.
-        else {
-            $container = $this->containerSession();
-            $add = [];
-            $delete = [];
-            foreach ($resources as $resourceId => $resource) {
-                if (isset($container->records[$resourceId])) {
-                    $delete[$resourceId] = $resource;
-                } else {
-                    $add[$resourceId] = $resource;
+        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $add */
+        foreach ($add as $resourceId => $resource) {
+            $data = $this->basketItemForResource($resource, true);
+            $data['status'] = 'success';
+            $container->records[$resourceId] = $data;
+            $results[$resourceId] = $data;
+            if ($userId) {
+                try {
+                    $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
+                } catch (\Exception $e) {
                 }
             }
-            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $add */
-            foreach ($add as $resourceId => $resource) {
-                $data = $this->basketItemForResource($resource, true);
-                $data['status'] = 'success';
-                $container->records[$resourceId] = $data;
-                $results[$resourceId] = $data;
-            }
-            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $delete */
-            foreach ($delete as $resourceId => $basketItem) {
-                $data = $this->basketItemForResource($resource, false);
-                $data['status'] = 'success';
-                unset($container->records[$resourceId]);
-                $results[$resourceId] = $data;
+        }
+        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $delete */
+        foreach ($delete as $resourceId => $resource) {
+            $data = $this->basketItemForResource($resource, false);
+            $data['status'] = 'success';
+            unset($container->records[$resourceId]);
+            $results[$resourceId] = $data;
+            if ($userId) {
+                try {
+                    $api->delete('basket_items', ['user' => $userId, 'resource' => $resourceId]);
+                } catch (\Exception $e) {
+                }
             }
         }
+
         if ($isMultiple) {
             $data = [
                 'basket_items' => $results,
@@ -258,27 +222,11 @@ class BasketController extends AbstractActionController
                 'basket_item' => reset($results),
             ];
         }
+
         return new JsonModel([
             'status' => 'success',
             'data' => $data,
         ]);
-    }
-
-    /**
-     * @return \Zend\Session\Container
-     */
-    protected function containerSession()
-    {
-        // Check if the container is ready for the current user.
-        $container = new Container('Basket');
-        if (empty($container->init)) {
-            $container->user = sha1(microtime() . random_bytes(20));
-            $container->records = [];
-            $container->init = true;
-        } elseif (!isset($container->records)) {
-            $container->records = [];
-        }
-        return $container;
     }
 
     protected function requestedResources()
@@ -312,6 +260,15 @@ class BasketController extends AbstractActionController
         ];
     }
 
+    /**
+     * Format a resource for the container.
+     *
+     * Copy in \Basket\Mvc\Controller\Plugin\ContainerBasket::basketItemForResource()
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param bool $isSelected
+     * @return array
+     */
     protected function basketItemForResource(AbstractResourceEntityRepresentation $resource, $isSelected)
     {
         static $siteSlug;

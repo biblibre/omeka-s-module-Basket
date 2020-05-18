@@ -17,9 +17,8 @@ else:
     $text = $translate('Remove from basket');
     $class = 'basket-delete btn-danger';
 endif;
-$this->vars()->offsetSet('text', $text);
 ?>
 
 <button class="basket-update <?= $class ?>" title="<?= $text ?>" data-url="<?= $url ?>">
-    <?= $this->partial('common/basket-button-content') ?>
+    <i class="fas fa-shopping-basket"></i> <?= $text ?>
 </button>

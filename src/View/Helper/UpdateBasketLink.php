@@ -21,11 +21,19 @@ class UpdateBasketLink extends AbstractHelper
      */
     public function __invoke(AbstractResourceEntityRepresentation $resource, array $options = [])
     {
+        static $first;
+
         $view = $this->getView();
 
         $user = $view->identity();
         if (!$user) {
             return '';
+        }
+
+        if (is_null($first)) {
+            $view->headScript()
+                ->appendFile($view->assetUrl('js/basket.js', 'Basket'), 'text/javascript', ['defer' => 'defer']);
+            $first = false;
         }
 
         if (!array_key_exists('basketItem', $options)) {
@@ -43,9 +51,6 @@ class UpdateBasketLink extends AbstractHelper
             'action' => 'toggle',
         ];
         $options += $defaultOptions;
-
-        $view->headScript()
-            ->appendFile($view->assetUrl('js/basket.js', 'Basket'), 'text/javascript', ['defer' => 'defer']);
 
         $template = $options['template'];
         unset($options['template']);

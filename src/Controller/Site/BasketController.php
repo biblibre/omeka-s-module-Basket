@@ -66,20 +66,27 @@ class BasketController extends AbstractActionController
 
         $user = $this->identity();
         $userId = $user->getId();
-        $updateBasketLink = $this->viewHelpers()->get('updateBasketLink');
+        $siteSlug = $this->currentSite()->slug();
         $results = [];
 
+        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $resources */
         foreach ($resources as $resourceId => $resource) {
             $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
             $data = [
-                'content' => $updateBasketLink($resource, ['basketItem' => $basketItem, 'action' => 'delete']),
+                'id' => $resourceId,
+                'type' => $resource->getControllerName(),
+                'url' => $resource->siteUrl($siteSlug, true),
+                // String is required to avoid error in container when the title
+                // is a resource.
+                'title' => (string) $resource->displayTitle(),
+                'inside' => true,
             ];
             if ($basketItem) {
                 $data['status'] = 'fail';
                 $data['message'] = $this->translate('Already in'); // @translate
             } else {
+                $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
                 $data['status'] = 'success';
-                $basketItem = $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
             }
             $results[$resourceId] = $data;
         }
@@ -119,28 +126,31 @@ class BasketController extends AbstractActionController
 
         $user = $this->identity();
         $userId = $user->getId();
-        $updateBasketLink = $this->viewHelpers()->get('updateBasketLink');
+        $siteSlug = $this->currentSite()->slug();
         $results = [];
 
         foreach ($ids as $resourceId) {
-            $data = [
-                'user_id' => $userId,
-                'resource_id' => $resourceId,
-            ];
-            $basketItem = $api->searchOne('basket_items', $data)->getContent();
+            $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
             if ($basketItem) {
                 $resource = $basketItem->resource();
                 $api->delete('basket_items', $basketItem->id());
-                $results[$resourceId] = [
+                $data = [
+                    'id' => $resourceId,
+                    'type' => $resource->getControllerName(),
+                    'url' => $resource->siteUrl($siteSlug, true),
+                    // String is required to avoid error in container when the title
+                    // is a resource.
+                    'title' => (string) $resource->displayTitle(),
+                    'inside' => false,
                     'status' => 'success',
-                    'content' => $updateBasketLink($resource, ['basketItem' => null, 'action' => 'add']),
                 ];
             } else {
-                $results[$resourceId] = [
+                $data = [
                     'status' => 'error',
                     'message' => $this->translate('Not found'), // @translate
                 ];
             }
+            $results[$resourceId] = $data;
         }
 
         if ($isMultiple) {
@@ -192,7 +202,7 @@ class BasketController extends AbstractActionController
 
         $user = $this->identity();
         $userId = $user->getId();
-        $updateBasketLink = $this->viewHelpers()->get('updateBasketLink');
+        $siteSlug = $this->currentSite()->slug();
 
         $results = [];
         $add = [];
@@ -204,26 +214,39 @@ class BasketController extends AbstractActionController
             if ($response->getTotalResults()) {
                 $delete[$resourceId] = $response->getContent();
             } else {
-                $add[$resourceId] = $resourceId;
+                $add[$resourceId] = $resource;
             }
         }
 
         if ($add) {
-            foreach ($add as $resourceId) {
-                $basketItem = $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
+            foreach ($add as $resourceId => $resource) {
+                $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
                 $results[$resourceId] = [
+                    'id' => $resourceId,
+                    'type' => $resource->getControllerName(),
+                    'url' => $resource->siteUrl($siteSlug, true),
+                    // String is required to avoid error in container when the title
+                    // is a resource.
+                    'title' => (string) $resource->displayTitle(),
+                    'inside' => true,
                     'status' => 'success',
-                    'content' => $updateBasketLink($resource, ['basketItem' => $basketItem, 'action' => 'toggle']),
                 ];
             }
         }
 
         if ($delete) {
             foreach ($delete as $resourceId => $basketItem) {
+                $resource = $basketItem->resource();
                 $api->delete('basket_items', $basketItem->id());
                 $results[$resourceId] = [
+                    'id' => $resourceId,
+                    'type' => $resource->getControllerName(),
+                    'url' => $resource->siteUrl($siteSlug, true),
+                    // String is required to avoid error in container when the title
+                    // is a resource.
+                    'title' => (string) $resource->displayTitle(),
+                    'inside' => false,
                     'status' => 'success',
-                    'content' => $updateBasketLink($resources[$resourceId], ['basketItem' => null, 'action' => 'toggle']),
                 ];
             }
         }

@@ -1,0 +1,29 @@
+#content .basket .media.resource {
+    text-align: inherit;
+}
+#content .media.resource:hover {
+    border-bottom: 1px solid transparent;
+}
+a.basket-list-toggle:link,
+a.basket-list-toggle:visited {
+    color: #000;
+    text-decoration: none;
+}
+.basket-list-toggle:after {
+    content:" ⊞";
+}
+.basket-list-toggle.active:after {
+    content:" ⊟";
+}
+.basket-empty,
+.basket-list {
+    display: none;
+}
+.basket-empty.active,
+.basket-list.active {
+    display: block;
+}
+span.basket-delete {
+    cursor: pointer;
+    margin-left: 12px;
+}

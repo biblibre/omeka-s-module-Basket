@@ -1,7 +1,7 @@
 <?php
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau 2018-2019
+ * Copyright Daniel Berthereau 2018-2020
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -40,6 +40,11 @@ $updateBasketLink = $this->plugin('updateBasketLink');
 
 $this->htmlElement('body')->appendAttribute('class', 'basket resource browse');
 
+$this->headLink()
+    ->appendStylesheet($this->assetUrl('css/basket.css', 'Basket'));
+$this->headScript()
+    ->appendFile($this->assetUrl('js/basket.js', 'Basket'), 'text/javascript', ['defer' => 'defer']);
+
 $headingTerm = $this->siteSetting('browse_heading_property_term', 'dcterms:title');
 $bodyTerm = $this->siteSetting('browse_body_property_term', 'dcterms:description');
 
@@ -56,14 +61,10 @@ foreach ($basketItems as $basketItem):
 endforeach;
 ?>
 
-<style>
-#content .media.resource:hover { border-bottom: 1px solid transparent; }
-</style>
-
-<?= $this->pageTitle($translate('Basket'), 2); ?>
+<?= $this->pageTitle($translate('Basket'), 2) // @translate ?>
 
 <?php if (count($basketItems)): ?>
-<h3><?= sprintf($translate('%d items, %d media'), count($resources['item']), count($resources['media'])) ?></h3>
+<h3><?= sprintf($translate('%d items, %d media'), count($resources['item']), count($resources['media'])) // @translate ?></h3>
 
 <?php $this->trigger('view.browse.before'); ?>
 <ul class="resource-list">
@@ -111,6 +112,6 @@ endforeach;
 
 <?php else: ?>
 <p>
-    <?= $translate('The basket is empty.') ?>
+    <?= $translate('The basket is empty.') // @translate ?>
 </p>
 <?php endif; ?>

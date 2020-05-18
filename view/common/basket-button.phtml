@@ -2,9 +2,8 @@
 /**
  * @var \Zend\View\Renderer\PhpRenderer $this
  * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
- * @var \Basket\Api\Representation\BasketItemRepresentation|null $basketItem
+ * @var \Basket\Api\Representation\BasketItemRepresentation|bool $basketItem
  * @var string $url
- * @var string $action deprecated "add" or "delete". Check basket item instead.
  * and options passed from the caller.
  */
 
@@ -19,6 +18,6 @@ else:
 endif;
 ?>
 
-<button class="basket-update <?= $class ?>" title="<?= $text ?>" data-url="<?= $url ?>">
-    <i class="fas fa-shopping-basket"></i> <?= $text ?>
+<button class="basket-update <?= $class ?>" title="<?= $text ?>" data-id="<?= $resource->id() ?>" data-url="<?= $url ?>">
+    <span class="fas fa-shopping-basket"></span> <?= $text ?>
 </button>

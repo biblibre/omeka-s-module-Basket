@@ -1,4 +1,5 @@
 <?php
+
 namespace Basket\View\Helper;
 
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
@@ -21,29 +22,26 @@ class UpdateBasketLink extends AbstractHelper
      */
     public function __invoke(AbstractResourceEntityRepresentation $resource, array $options = [])
     {
-        static $first;
-
         $view = $this->getView();
+        $siteSetting = $view->plugin('siteSetting');
 
         $user = $view->identity();
-        if (!$user) {
+        $allowVisitor = $siteSetting('basket_visitor_allow', true);
+        if (!$allowVisitor && !$user) {
             return '';
         }
 
-        if (is_null($first)) {
-            $view->headScript()
-                ->appendFile($view->assetUrl('js/basket.js', 'Basket'), 'text/javascript', ['defer' => 'defer']);
-            $first = false;
-        }
-
-        if (!array_key_exists('basketItem', $options)) {
-            $options['basketItem'] = $this->getView()->api()->searchOne(
-                'basket_items',
-                [
-                    'user_id' => $user->getId(),
-                    'resource_id' => $resource->id(),
-                ])
-                ->getContent();
+        $userFillMain = $user && $siteSetting('basket_user_fill_main');
+        // User basket.
+        if ($userFillMain) {
+            if (!array_key_exists('basketItem', $options)) {
+                $options['basketItem'] = $view->api()
+                    ->searchOne('basket_items', ['user_id' => $user->getId(), 'resource_id' => $resource->id()])
+                    ->getContent();
+            }
+        } else {
+            $container = new \Zend\Session\Container('Basket');
+            $options['basketItem'] = isset($container->records[$resource->id()]);
         }
 
         $defaultOptions = [
@@ -58,8 +56,6 @@ class UpdateBasketLink extends AbstractHelper
         $params = [
             'resource' => $resource,
             'url' => $view->url('site/basket-id', ['action' => $options['action'], 'id' => $resource->id()], true),
-            // @deprecated Kept for old themes.
-            'action' => $options['basketItem'] ? 'delete' : 'add',
         ];
 
         return $view->partial($template, $params + $options);

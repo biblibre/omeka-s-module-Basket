@@ -29,6 +29,11 @@ return  [
             'updateBasketLink' => View\Helper\UpdateBasketLink::class,
         ],
     ],
+    'form_elements' => [
+        'invokables' => [
+            Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
+        ],
+    ],
     'controllers' => [
         'invokables' => [
             'Basket\Controller\Site\Basket' => Controller\Site\BasketController::class,
@@ -125,5 +130,12 @@ return  [
     'js_translate_strings' => [
         'Add to basket', // @translate
         'Remove from basket', // @translate
+    ],
+    'basket' => [
+        'site_settings' => [
+            'basket_visitor_allow' => true,
+            //  TODO Move this option to user settings.
+            'basket_user_fill_main' => false,
+        ],
     ],
 ];

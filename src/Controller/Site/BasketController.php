@@ -30,8 +30,10 @@
 
 namespace Basket\Controller\Site;
 
+use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;
+use Zend\Session\Container;
 use Zend\View\Model\JsonModel;
 
 class BasketController extends AbstractActionController
@@ -42,53 +44,54 @@ class BasketController extends AbstractActionController
             return $this->jsonErrorNotFound();
         }
 
-        $params = $this->params();
-        $id = $params->fromRoute('id') ?: $params->fromQuery('id');
-        if (!$id) {
+        $siteSettings = $this->siteSettings();
+        $allowVisitor = $siteSettings->get('basket_visitor_allow', true);
+        $user = $this->identity();
+        if (!$allowVisitor && !$user) {
             return $this->jsonErrorNotFound();
         }
 
-        $isMultiple = is_array($id);
-        $ids = $isMultiple ? $id : [$id];
+        $resources = $this->requestedResources();
+        if (empty($resources['has_result'])) {
+            return $this->jsonErrorNotFound();
+        }
+        $isMultiple = $resources['is_multiple'];
+        $resources = $resources['resources'];
 
         $api = $this->api();
-
-        // Check resources.
-        $resources = [];
-        foreach ($ids as $id) {
-            try {
-                $resource = $api->read('resources', ['id' => $id])->getContent();
-            } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                return $this->jsonErrorNotFound();
-            }
-            $resources[$id] = $resource;
-        }
-
-        $user = $this->identity();
-        $userId = $user->getId();
-        $siteSlug = $this->currentSite()->slug();
         $results = [];
 
-        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $resources */
-        foreach ($resources as $resourceId => $resource) {
-            $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
-            $data = [
-                'id' => $resourceId,
-                'type' => $resource->getControllerName(),
-                'url' => $resource->siteUrl($siteSlug, true),
-                // String is required to avoid error in container when the title
-                // is a resource.
-                'title' => (string) $resource->displayTitle(),
-                'inside' => true,
-            ];
-            if ($basketItem) {
-                $data['status'] = 'fail';
-                $data['message'] = $this->translate('Already in'); // @translate
-            } else {
-                $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
-                $data['status'] = 'success';
+        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
+        // User basket.
+        if ($userFillMain) {
+            $userId = $user->getId();
+            foreach ($resources as $resourceId => $resource) {
+                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
+                $data = $this->basketItemForResource($resource, true);
+                if ($basketItem) {
+                    $data['status'] = 'fail';
+                    $data['message'] = $this->translate('Already in'); // @translate
+                } else {
+                    $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
+                    $data['status'] = 'success';
+                }
+                $results[$resourceId] = $data;
             }
-            $results[$resourceId] = $data;
+        }
+        // Session basket.
+        else {
+            $container = new Container('Basket');
+            foreach ($resources as $resourceId => $resource) {
+                $data = $this->basketItemForResource($resource, true);
+                if (isset($container->records[$resourceId])) {
+                    $data['status'] = 'fail';
+                    $data['message'] = $this->translate('Already in'); // @translate
+                } else {
+                    $container->records[$resourceId] = $data;
+                    $data['status'] = 'success';
+                }
+                $results[$resourceId] = $data;
+            }
         }
 
         if ($isMultiple) {
@@ -113,44 +116,46 @@ class BasketController extends AbstractActionController
             return $this->jsonErrorNotFound();
         }
 
-        $params = $this->params();
-        $id = $params->fromRoute('id') ?: $params->fromQuery('id');
-        if (!$id) {
+        $siteSettings = $this->siteSettings();
+        $allowVisitor = $siteSettings->get('basket_visitor_allow', true);
+        $user = $this->identity();
+        if (!$allowVisitor && !$user) {
             return $this->jsonErrorNotFound();
         }
 
-        $isMultiple = is_array($id);
-        $ids = $isMultiple ? $id : [$id];
+        $resources = $this->requestedResources();
+        if (empty($resources['has_result'])) {
+            return $this->jsonErrorNotFound();
+        }
+        $isMultiple = $resources['is_multiple'];
+        $resources = $resources['resources'];
 
         $api = $this->api();
-
-        $user = $this->identity();
-        $userId = $user->getId();
-        $siteSlug = $this->currentSite()->slug();
         $results = [];
 
-        foreach ($ids as $resourceId) {
-            $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
-            if ($basketItem) {
-                $resource = $basketItem->resource();
-                $api->delete('basket_items', $basketItem->id());
-                $data = [
-                    'id' => $resourceId,
-                    'type' => $resource->getControllerName(),
-                    'url' => $resource->siteUrl($siteSlug, true),
-                    // String is required to avoid error in container when the title
-                    // is a resource.
-                    'title' => (string) $resource->displayTitle(),
-                    'inside' => false,
-                    'status' => 'success',
-                ];
-            } else {
-                $data = [
-                    'status' => 'error',
-                    'message' => $this->translate('Not found'), // @translate
-                ];
+        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
+        // User basket.
+        if ($userFillMain) {
+            $userId = $user->getId();
+            foreach ($resources as $resourceId => $resource) {
+                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
+                $data = $this->basketItemForResource($resource, false);
+                $data['status'] = 'success';
+                if ($basketItem) {
+                    $api->delete('basket_items', $basketItem->id());
+                }
+                $results[$resourceId] = $data;
             }
-            $results[$resourceId] = $data;
+        }
+        // Session basket.
+        else {
+            $container = new Container('Basket');
+            foreach ($resources as $resourceId => $resource) {
+                $data = $this->basketItemForResource($resource, false);
+                $data['status'] = 'success';
+                unset($container->records[$resourceId]);
+                $results[$resourceId] = $data;
+            }
         }
 
         if ($isMultiple) {
@@ -171,83 +176,77 @@ class BasketController extends AbstractActionController
 
     public function toggleAction()
     {
-        if (!$this->getRequest()->isXmlHttpRequest()) {
+        $siteSettings = $this->siteSettings();
+        $allowVisitor = $siteSettings->get('basket_visitor_allow', true);
+        $user = $this->identity();
+        if (!$allowVisitor && !$user) {
             return $this->jsonErrorNotFound();
         }
 
-        $params = $this->params();
-        $id = $params->fromRoute('id') ?: $params->fromQuery('id');
-        if (!$id) {
+        $resources = $this->requestedResources();
+        if (empty($resources['has_result'])) {
             return $this->jsonErrorNotFound();
         }
-
-        $isMultiple = is_array($id);
-        $ids = $isMultiple ? $id : [$id];
+        $isMultiple = $resources['is_multiple'];
+        $resources = $resources['resources'];
 
         $api = $this->api();
-
-        // Check resources.
-        $resources = [];
-        foreach ($ids as $id) {
-            try {
-                $resource = $api->read('resources', ['id' => $id])->getContent();
-                $resources[$id] = $resource;
-            } catch (\Omeka\Api\Exception\NotFoundException $e) {
-            }
-        }
-
-        if (!count($resources)) {
-            return $this->jsonErrorNotFound();
-        }
-
-        $user = $this->identity();
-        $userId = $user->getId();
-        $siteSlug = $this->currentSite()->slug();
-
         $results = [];
-        $add = [];
-        /** @var \Basket\Api\Representation\BasketItemRepresentation[] $delete */
-        $delete = [];
-        foreach ($resources as $resourceId => $resource) {
-            $data = ['user_id' => $userId, 'resource_id' => $resourceId];
-            $response = $api->searchOne('basket_items', $data);
-            if ($response->getTotalResults()) {
-                $delete[$resourceId] = $response->getContent();
-            } else {
-                $add[$resourceId] = $resource;
-            }
-        }
 
-        if ($add) {
+        $userFillMain = $user && $siteSettings->get('basket_user_fill_main');
+        // User basket.
+        if ($userFillMain) {
+            $userId = $user->getId();
+            $add = [];
+            $delete = [];
+            foreach ($resources as $resourceId => $resource) {
+                $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
+                if ($basketItem) {
+                    $delete[$resourceId] = $basketItem;
+                } else {
+                    $add[$resourceId] = $resource;
+                }
+            }
+            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $add */
             foreach ($add as $resourceId => $resource) {
                 $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
-                $results[$resourceId] = [
-                    'id' => $resourceId,
-                    'type' => $resource->getControllerName(),
-                    'url' => $resource->siteUrl($siteSlug, true),
-                    // String is required to avoid error in container when the title
-                    // is a resource.
-                    'title' => (string) $resource->displayTitle(),
-                    'inside' => true,
-                    'status' => 'success',
-                ];
+                $data = $this->basketItemForResource($resource, true);
+                $data['status'] = 'success';
+                $results[$resourceId] = $data;
+            }
+            /** @var \Basket\Api\Representation\BasketItemRepresentation[] $delete */
+            foreach ($delete as $resourceId => $basketItem) {
+                $data = $this->basketItemForResource($resources[$resourceId], false);
+                $api->delete('basket_items', $basketItem->id());
+                $data['status'] = 'success';
+                $results[$resourceId] = $data;
             }
         }
-
-        if ($delete) {
+        // Session basket.
+        else {
+            $container = new Container('Basket');
+            $add = [];
+            $delete = [];
+            foreach ($resources as $resourceId => $resource) {
+                if (isset($container->records[$resourceId])) {
+                    $delete[$resourceId] = $resource;
+                } else {
+                    $add[$resourceId] = $resource;
+                }
+            }
+            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $add */
+            foreach ($add as $resourceId => $resource) {
+                $data = $this->basketItemForResource($resource, true);
+                $data['status'] = 'success';
+                $container->records[$resourceId] = $data;
+                $results[$resourceId] = $data;
+            }
+            /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $delete */
             foreach ($delete as $resourceId => $basketItem) {
-                $resource = $basketItem->resource();
-                $api->delete('basket_items', $basketItem->id());
-                $results[$resourceId] = [
-                    'id' => $resourceId,
-                    'type' => $resource->getControllerName(),
-                    'url' => $resource->siteUrl($siteSlug, true),
-                    // String is required to avoid error in container when the title
-                    // is a resource.
-                    'title' => (string) $resource->displayTitle(),
-                    'inside' => false,
-                    'status' => 'success',
-                ];
+                $data = $this->basketItemForResource($resource, false);
+                $data['status'] = 'success';
+                unset($container->records[$resourceId]);
+                $results[$resourceId] = $data;
             }
         }
 
@@ -265,6 +264,57 @@ class BasketController extends AbstractActionController
             'status' => 'success',
             'data' => $data,
         ]);
+    }
+
+    protected function requestedResources()
+    {
+        $params = $this->params();
+        $id = $params->fromRoute('id') ?: $params->fromQuery('id');
+        if (!$id) {
+            return ['has_result' => false];
+        }
+
+        $isMultiple = is_array($id);
+        $ids = $isMultiple ? $id : [$id];
+
+        $api = $this->api();
+        // Check resources.
+        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $resources */
+        $resources = [];
+        foreach ($ids as $id) {
+            try {
+                $resource = $api->read('resources', ['id' => $id])->getContent();
+            } catch (\Omeka\Api\Exception\NotFoundException $e) {
+                return ['has_result' => false];
+            }
+            $resources[$id] = $resource;
+        }
+
+        return [
+            'has_result' => (bool) count($resources),
+            'is_multiple' => $isMultiple,
+            'resources' => $resources,
+        ];
+    }
+
+    protected function basketItemForResource(AbstractResourceEntityRepresentation $resource, $inside)
+    {
+        static $siteSlug;
+        static $url;
+        if (is_null($siteSlug)) {
+            $siteSlug = $this->currentSite()->slug();
+            $url = $this->url();
+        }
+        return [
+            'id' => $resource->id(),
+            'type' => $resource->getControllerName(),
+            'url' => $resource->siteUrl($siteSlug, true),
+            'url_remove' => $url->fromRoute('site/basket-id', ['site-slug' => $siteSlug, 'action' => 'delete', 'id' => $resource->id()]),
+            // String is required to avoid error in container when the
+            // title is a resource.
+            'title' => (string) $resource->displayTitle(),
+            'inside' => $inside,
+        ];
     }
 
     protected function jsonErrorNotFound()

@@ -127,10 +127,6 @@ return  [
             ],
         ],
     ],
-    'js_translate_strings' => [
-        'Add to basket', // @translate
-        'Remove from basket', // @translate
-    ],
     'basket' => [
         'site_settings' => [
             'basket_visitor_allow' => true,

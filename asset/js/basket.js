@@ -25,28 +25,24 @@
         });
 
         var updateBasketButton = function(basketItem) {
-            let basketButton = $('.basket-update[data-id=' + basketItem.id + ']');
-            if (!basketButton.length) {
+            let button = $('.basket-update[data-id=' + basketItem.id + ']');
+            if (!button.length) {
                 return;
             }
-            // Check if the main omeka js is loaded to get translations.
-            var isOmeka = typeof Omeka !== 'undefined' && typeof Omeka.jsTranslate !== 'undefined';
-            // See template basket-button.phtml.
-            let basketText = basketItem.inside ? 'Remove from basket' : 'Add to basket';
-            basketText = isOmeka ? Omeka.jsTranslate(basketText) : basketText;
-            basketButton
-                .prop('class', 'basket-update ' + (basketItem.inside ? 'basket-delete btn-danger' : 'basket-add btn-primary'))
-                .html('<i class="fas fa-shopping-basket"></i> ' + basketText);
+            button
+                .prop('title', button.attr('data-title-' + basketItem.value))
+                .removeClass('selected unselected')
+                .addClass(basketItem.value);
         }
 
         var updateBasketList = function(basketItem) {
-            let basketList = $('.basket-list .basket-items');
-            if (!basketList.length) {
+            let list = $('.basket-list .basket-items');
+            if (!list.length) {
                 return;
             }
-            if (basketItem.inside) {
-                if (!basketList.find('li[data-id=' + basketItem.id + ']').length) {
-                    basketList.append(
+            if (basketItem.value === 'selected') {
+                if (!list.find('li[data-id=' + basketItem.id + ']').length) {
+                    list.append(
                         $('<li>').attr('data-id', basketItem.id)
                             .append(
                                 $('<a>').prop('href', basketItem.url).append(basketItem.title)
@@ -55,15 +51,15 @@
                                 $('<span class="basket-delete">')
                                     .attr('data-id', basketItem.id)
                                     .attr('data-url', basketItem.url_remove)
-                                    .attr('title', basketList.attr('data-text-remove'))
-                                    .attr('aria-label', basketList.attr('data-text-remove'))
+                                    .attr('title', list.attr('data-text-remove'))
+                                    .attr('aria-label', list.attr('data-text-remove'))
                             )
                     );
                 }
             } else {
-                basketList.find('li[data-id=' + basketItem.id + ']').remove();
+                list.find('li[data-id=' + basketItem.id + ']').remove();
             }
-            if (basketList.find('li').length) {
+            if (list.find('li').length) {
                 $('.basket-empty').removeClass('active');
             } else {
                 $('.basket-empty').addClass('active');

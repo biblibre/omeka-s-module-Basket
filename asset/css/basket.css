@@ -37,3 +37,10 @@ span.basket-delete {
     vertical-align: inherit;
     margin-right: inherit;
 }
+/* Note: regular font awesome icons are no more free. */
+.basket-update.selected {
+     color:black;
+}
+.basket-update.unselected {
+     color:gray;
+}

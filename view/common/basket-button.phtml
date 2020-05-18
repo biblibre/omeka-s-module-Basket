@@ -2,22 +2,19 @@
 /**
  * @var \Zend\View\Renderer\PhpRenderer $this
  * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
- * @var \Basket\Api\Representation\BasketItemRepresentation|bool $basketItem
+ * @var bool $basketItem
  * @var string $url
  * and options passed from the caller.
  */
 
 $translate = $this->plugin('translate');
 
-if (empty($basketItem)):
-    $text = $translate('Add to basket');
-    $class = 'basket-add btn-primary';
-else:
-    $text = $translate('Remove from basket');
-    $class = 'basket-delete btn-danger';
-endif;
+$textSelect['unselected'] = $translate('Add to basket');
+$textSelect['selected'] = $translate('Remove from basket');
+$class = empty($basketItem) ? 'unselected' : 'selected';
+$text = $textSelect[$class];
 ?>
 
-<button class="basket-update <?= $class ?>" title="<?= $text ?>" data-id="<?= $resource->id() ?>" data-url="<?= $url ?>">
-    <span class="fas fa-shopping-basket"></span> <?= $text ?>
+<button class="basket-update <?= $class ?>" data-id="<?= $resource->id() ?>" title="<?= $text ?>" data-title-selected="<?= $textSelect['selected'] ?>" data-title-unselected="<?= $textSelect['unselected'] ?>" data-url="<?= $url ?>">
+    <span class="fas fa-bookmark"></span >
 </button>

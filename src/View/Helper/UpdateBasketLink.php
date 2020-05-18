@@ -31,18 +31,8 @@ class UpdateBasketLink extends AbstractHelper
             return '';
         }
 
-        $userFillMain = $user && $siteSetting('basket_user_fill_main');
-        // User basket.
-        if ($userFillMain) {
-            if (!array_key_exists('basketItem', $options)) {
-                $options['basketItem'] = $view->api()
-                    ->searchOne('basket_items', ['user_id' => $user->getId(), 'resource_id' => $resource->id()])
-                    ->getContent();
-            }
-        } else {
-            $container = new \Zend\Session\Container('Basket');
-            $options['basketItem'] = isset($container->records[$resource->id()]);
-        }
+        $container = new \Zend\Session\Container('Basket');
+        $options['basketItem'] = isset($container->records[$resource->id()]);
 
         $defaultOptions = [
             'template' => self::PARTIAL_NAME,

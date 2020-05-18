@@ -1,14 +1,19 @@
-Basket (module for Omeka S)
+Basket (module for Omeka S) [archived]
 ===========================
 
-[Basket] is a module for [Omeka S] that allows user to select items and medias
-and to save them in a basket instantly, and to keep through sessions.
+[Basket] is a module for [Omeka S] that allows an anonymous visitor or a user to
+select resources and to save them in a basket instantly, and to keep them
+through sessions.
+
+**IMPORTANT**
+This fork of the module [Basket of BibLibre] is deprecated and replaced by the
+module [Selection] in order to manage improvements.
 
 
 Installation
 ------------
 
-Install the optional module [Guest] if wanted.
+Install the optional modules [Generic] and [Guest] if wanted.
 
 Uncompress files in the module directory and rename module folder `Basket`.
 Then install it like any other Omeka module and follow the config instructions.
@@ -82,7 +87,10 @@ Copyright
 
 [Basket]: https://github.com/Daniel-KM/Omeka-S-module-Basket
 [Omeka S]: https://omeka.org/s
+[Generic]: https://github.com/Daniel-KM/Omeka-S-module-Generic
 [Guest]: https://github.com/Daniel-KM/Omeka-S-module-Guest
+[Basket of BibLibre]: https://github.com/BibLibre/Omeka-S-module-Basket
+[Selection]: https://github.com/Daniel-KM/Omeka-S-module-Selection
 [Installing a module]: http://dev.omeka.org/docs/s/user-manual/modules/#installing-modules
 [module issues]: https://github.com/Daniel-KM/Omeka-S-module-Basket/issues
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html

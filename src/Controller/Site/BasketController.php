@@ -71,25 +71,33 @@ class BasketController extends AbstractActionController
 
         foreach ($resources as $resourceId => $resource) {
             $basketItem = $api->searchOne('basket_items', ['user_id' => $userId, 'resource_id' => $resourceId])->getContent();
+            $data = [
+                'content' => $updateBasketLink($resource, ['basketItem' => $basketItem, 'action' => 'delete']),
+            ];
             if ($basketItem) {
-                $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_400,
-                    'message' => 'Already in', // @translate
-                ];
+                $data['status'] = 'fail';
+                $data['message'] = $this->translate('Already in'); // @translate
             } else {
+                $data['status'] = 'success';
                 $basketItem = $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
-                $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_200,
-                    'content' => $updateBasketLink($resource, ['basketItem' => $basketItem, 'action' => 'delete']),
-                ];
             }
+            $results[$resourceId] = $data;
         }
 
-        if (!$isMultiple) {
-            $results = reset($results);
+        if ($isMultiple) {
+            $data = [
+                'basket_items' => $results,
+            ];
+        } else {
+            $data = [
+                'basket_item' => reset($results),
+            ];
         }
 
-        return new JsonModel($results);
+        return new JsonModel([
+            'status' => 'success',
+            'data' => $data,
+        ]);
     }
 
     public function deleteAction()
@@ -124,22 +132,31 @@ class BasketController extends AbstractActionController
                 $resource = $basketItem->resource();
                 $api->delete('basket_items', $basketItem->id());
                 $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_200,
+                    'status' => 'success',
                     'content' => $updateBasketLink($resource, ['basketItem' => null, 'action' => 'add']),
                 ];
             } else {
                 $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_404,
-                    'message' => 'Not found', // @translate
+                    'status' => 'error',
+                    'message' => $this->translate('Not found'), // @translate
                 ];
             }
         }
 
-        if (!$isMultiple) {
-            $results = reset($results);
+        if ($isMultiple) {
+            $data = [
+                'basket_items' => $results,
+            ];
+        } else {
+            $data = [
+                'basket_item' => reset($results),
+            ];
         }
 
-        return new JsonModel($results);
+        return new JsonModel([
+            'status' => 'success',
+            'data' => $data,
+        ]);
     }
 
     public function toggleAction()
@@ -195,7 +212,7 @@ class BasketController extends AbstractActionController
             foreach ($add as $resourceId) {
                 $basketItem = $api->create('basket_items', ['o:user_id' => $userId, 'o:resource_id' => $resourceId])->getContent();
                 $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_200,
+                    'status' => 'success',
                     'content' => $updateBasketLink($resource, ['basketItem' => $basketItem, 'action' => 'toggle']),
                 ];
             }
@@ -205,17 +222,26 @@ class BasketController extends AbstractActionController
             foreach ($delete as $resourceId => $basketItem) {
                 $api->delete('basket_items', $basketItem->id());
                 $results[$resourceId] = [
-                    'status' => Response::STATUS_CODE_200,
+                    'status' => 'success',
                     'content' => $updateBasketLink($resources[$resourceId], ['basketItem' => null, 'action' => 'toggle']),
                 ];
             }
         }
 
-        if (!$isMultiple) {
-            $results = reset($results);
+        if ($isMultiple) {
+            $data = [
+                'basket_items' => $results,
+            ];
+        } else {
+            $data = [
+                'basket_item' => reset($results),
+            ];
         }
 
-        return new JsonModel($results);
+        return new JsonModel([
+            'status' => 'success',
+            'data' => $data,
+        ]);
     }
 
     protected function jsonErrorNotFound()
@@ -223,7 +249,7 @@ class BasketController extends AbstractActionController
         $response = $this->getResponse();
         $response->setStatusCode(Response::STATUS_CODE_404);
         return new JsonModel([
-            'status' => Response::STATUS_CODE_404,
+            'status' => 'error',
             'message' => $this->translate('Not found'), // @translate
         ]);
     }

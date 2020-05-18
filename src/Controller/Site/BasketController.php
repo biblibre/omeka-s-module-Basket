@@ -80,7 +80,7 @@ class BasketController extends AbstractActionController
         }
         // Session basket.
         else {
-            $container = new Container('Basket');
+            $container = $this->containerSession();
             foreach ($resources as $resourceId => $resource) {
                 $data = $this->basketItemForResource($resource, true);
                 if (isset($container->records[$resourceId])) {
@@ -149,7 +149,7 @@ class BasketController extends AbstractActionController
         }
         // Session basket.
         else {
-            $container = new Container('Basket');
+            $container = $this->containerSession();
             foreach ($resources as $resourceId => $resource) {
                 $data = $this->basketItemForResource($resource, false);
                 $data['status'] = 'success';
@@ -224,7 +224,7 @@ class BasketController extends AbstractActionController
         }
         // Session basket.
         else {
-            $container = new Container('Basket');
+            $container = $this->containerSession();
             $add = [];
             $delete = [];
             foreach ($resources as $resourceId => $resource) {
@@ -249,7 +249,6 @@ class BasketController extends AbstractActionController
                 $results[$resourceId] = $data;
             }
         }
-
         if ($isMultiple) {
             $data = [
                 'basket_items' => $results,
@@ -259,11 +258,27 @@ class BasketController extends AbstractActionController
                 'basket_item' => reset($results),
             ];
         }
-
         return new JsonModel([
             'status' => 'success',
             'data' => $data,
         ]);
+    }
+
+    /**
+     * @return \Zend\Session\Container
+     */
+    protected function containerSession()
+    {
+        // Check if the container is ready for the current user.
+        $container = new Container('Basket');
+        if (empty($container->init)) {
+            $container->user = sha1(microtime() . random_bytes(20));
+            $container->records = [];
+            $container->init = true;
+        } elseif (!isset($container->records)) {
+            $container->records = [];
+        }
+        return $container;
     }
 
     protected function requestedResources()

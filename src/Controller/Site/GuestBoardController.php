@@ -52,11 +52,17 @@ class GuestBoardController extends AbstractActionController
 
             $basketItems = $this->api()->search('basket_items', $query)->getContent();
 
+            $resources = [];
+            foreach ($basketItems as $basketItem) {
+                $resources[] = $basketItem->resource();
+            }
+
             $view = new ViewModel;
             return $view
                 ->setTemplate('guest/site/guest/basket')
                 ->setVariable('site', $this->currentSite())
-                ->setVariable('basketItems', $basketItems);
+                ->setVariable('basketItems', $basketItems)
+                ->setVariable('resources', $resources);
         }
     }
 }

@@ -30,3 +30,10 @@ span.basket-delete {
     cursor: pointer;
     margin-left: 12px;
 }
+.basket #content .media.resource,
+#content .basket .media.resource {
+    display: inherit;
+    text-align: inherit;
+    vertical-align: inherit;
+    margin-right: inherit;
+}

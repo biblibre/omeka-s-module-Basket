@@ -1,0 +1,11 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * and options passed from the caller.
+ */
+
+$translate = $this->plugin('translate');
+$url = $this->plugin('url');
+?>
+
+<a class="basket show" href="<?= $url('site/guest/basket', [], true) ?>"><?= $translate('Basket') ?></a>

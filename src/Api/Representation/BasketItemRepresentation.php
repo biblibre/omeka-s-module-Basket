@@ -33,9 +33,6 @@ use Omeka\Api\Representation\AbstractEntityRepresentation;
 
 class BasketItemRepresentation extends AbstractEntityRepresentation
 {
-    /**
-     * {@inheritdoc}
-     */
     public function getJsonLdType()
     {
         return 'o:BasketItem';
@@ -44,7 +41,6 @@ class BasketItemRepresentation extends AbstractEntityRepresentation
     public function getJsonLd()
     {
         $entity = $this->resource;
-
         return [
             'o:user_id' => $entity->getUser()->getId(),
             'o:resource_id' => $entity->getResource()->getId(),
@@ -52,25 +48,35 @@ class BasketItemRepresentation extends AbstractEntityRepresentation
         ];
     }
 
+    /**
+     * @return \Omeka\Api\Representation\UserRepresentation
+     */
     public function user()
     {
         $adapter = $this->getAdapter('users');
-
         return $adapter->getRepresentation($this->resource->getUser());
     }
 
+    /**
+     * @return \Omeka\Api\Representation\AbstractResourceEntityRepresentation
+     */
     public function resource()
     {
         $adapter = $this->getAdapter('resources');
-
         return $adapter->getRepresentation($this->resource->getResource());
     }
 
+    /**
+     * @return \DateTime
+     */
     public function created()
     {
         return $this->resource->getCreated();
     }
 
+    /**
+     * @return \Basket\Entity\BasketItem
+     */
     public function getEntity()
     {
         return $this->resource;

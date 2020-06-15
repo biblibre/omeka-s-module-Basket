@@ -1,6 +1,8 @@
 <?php
+
 /*
  * Copyright BibLibre, 2016
+ * Copyright Daniel Berthereau, 2019-2020
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -25,23 +27,42 @@
  * The fact that you are presently reading this means that you have had
  * knowledge of the CeCILL license and that you accept its terms.
  */
-?>
 
-<?php $escape = $this->plugin('escapeHtml'); ?>
+namespace Basket\Controller\Site;
 
-<div class="<?php echo $resource->resourceName(); ?> resource">
-    <?php if (method_exists($resource, 'primaryMedia') && $primaryMedia = $resource->primaryMedia()): ?>
-        <img
-            src="<?php echo $escape($primaryMedia->thumbnailUrl('medium')); ?>"
-            title="<?php echo $escape($primaryMedia->displayTitle()); ?>"
-            alt="<?php echo $escape($primaryMedia->mediaType()); ?> thumbnail"
-        />
-    <?php endif; ?>
-    <h4><?php echo $resource->link($resource->displayTitle()); ?></h4>
-<?php echo $this->updateBasketLink($resource); ?>
-    <?php if ($description = $resource->displayDescription()): ?>
-        <div class="description">
-            <?php echo $description; ?>
-        </div>
-    <?php endif; ?>
-</div>
+use Zend\Mvc\Controller\AbstractActionController;
+use Zend\View\Model\ViewModel;
+
+class GuestBoardController extends AbstractActionController
+{
+    public function indexAction()
+    {
+        $params = $this->params()->fromRoute();
+        $params['action'] = 'show';
+        return $this->forward()->dispatch(__CLASS__, $params);
+    }
+
+    public function showAction()
+    {
+        $user = $this->identity();
+
+        if (isset($user)) {
+            $query = $this->params()->fromQuery();
+            $query['user_id'] = $user->getId();
+
+            $basketItems = $this->api()->search('basket_items', $query)->getContent();
+
+            $resources = [];
+            foreach ($basketItems as $basketItem) {
+                $resources[] = $basketItem->resource();
+            }
+
+            $view = new ViewModel;
+            return $view
+                ->setTemplate('guest/site/guest/basket')
+                ->setVariable('site', $this->currentSite())
+                ->setVariable('basketItems', $basketItems)
+                ->setVariable('resources', $resources);
+        }
+    }
+}

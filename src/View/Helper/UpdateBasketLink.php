@@ -2,50 +2,52 @@
 
 namespace Basket\View\Helper;
 
+use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\View\Helper\AbstractHelper;
 
 class UpdateBasketLink extends AbstractHelper
 {
-    protected $authenticationService;
+    /**
+     * The default partial view script.
+     */
+    const PARTIAL_NAME = 'common/basket-button';
 
-    public function __construct($authenticationService)
-    {
-        $this->authenticationService = $authenticationService;
-    }
-
-    public function __invoke($resource)
+    /**
+     * Create a button to add or remove a resource to/from the basket.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $options Options for the partial. Managed key:
+     * - action: "add" or "delete". If not specified, the action is "toggle".
+     * @return string
+     */
+    public function __invoke(AbstractResourceEntityRepresentation $resource, array $options = [])
     {
         $view = $this->getView();
+        $siteSetting = $view->plugin('siteSetting');
 
-        $user = $this->authenticationService->getIdentity();
-        if (!$user) {
+        $user = $view->identity();
+        $allowVisitor = $siteSetting('basket_visitor_allow', true);
+        if (!$allowVisitor && !$user) {
             return '';
         }
 
-        $action = 'add';
+        $container = new \Zend\Session\Container('Basket');
+        $options['basketItem'] = isset($container->records[$resource->id()]);
 
-        $basket = $this->basketExistsFor($user->getId(), $resource->id());
-        if ($basket) {
-            $action = 'delete';
-        }
+        $defaultOptions = [
+            'template' => self::PARTIAL_NAME,
+            'action' => 'toggle',
+        ];
+        $options += $defaultOptions;
 
-        $view->headScript()->appendFile($view->assetUrl('js/basket.js', 'Basket'));
+        $template = $options['template'];
+        unset($options['template']);
 
-        return $view->partial('basket/basket-button', [
-            'action' => $action,
+        $params = [
             'resource' => $resource,
-            'url' => $view->url('site/basket-update', ['action' => $action, 'id' => $resource->id()], true),
-        ]);
-    }
+            'url' => $view->url('site/basket-id', ['action' => $options['action'], 'id' => $resource->id()], true),
+        ];
 
-    protected function basketExistsFor($userId, $resourceId)
-    {
-        $api = $this->getView()->api();
-        $basket_items = $api->search('basket_items', [
-            'user_id' => $userId,
-            'resource_id' => $resourceId,
-        ])->getContent();
-
-        return !empty($basket_items) ? $basket_items[0] : null;
+        return $view->partial($template, $params + $options);
     }
 }

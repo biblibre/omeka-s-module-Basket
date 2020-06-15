@@ -2,6 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
+ * Copyright Daniel Berthereau, 2019
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -37,41 +38,26 @@ use Omeka\Stdlib\ErrorStore;
 
 class BasketItemAdapter extends AbstractEntityAdapter
 {
-    /**
-     * {@inheritdoc}
-     */
     protected $sortFields = [
         'id' => 'id',
         'created' => 'created',
     ];
 
-    /**
-     * {@inheritdoc}
-     */
     public function getResourceName()
     {
         return 'basket_items';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getRepresentationClass()
     {
-        return 'Basket\Api\Representation\BasketItemRepresentation';
+        return \Basket\Api\Representation\BasketItemRepresentation::class;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getEntityClass()
     {
-        return 'Basket\Entity\BasketItem';
+        return \Basket\Entity\BasketItem::class;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function hydrate(Request $request, EntityInterface $entity,
         ErrorStore $errorStore
     ) {
@@ -88,13 +74,17 @@ class BasketItemAdapter extends AbstractEntityAdapter
 
     public function buildQuery(QueryBuilder $qb, array $query)
     {
+        $isOldOmeka = \Omeka\Module::VERSION < 2;
+        $alias = $isOldOmeka ? $this->getEntityClass() : 'omeka_root';
+
+        $expr = $qb->expr();
         if (isset($query['user_id'])) {
             $userAlias = $this->createAlias();
             $qb->innerJoin(
-                $this->getEntityClass() . '.user',
+                $alias . '.user',
                 $userAlias
             );
-            $qb->andWhere($qb->expr()->eq(
+            $qb->andWhere($expr->eq(
                 "$userAlias.id",
                 $this->createNamedParameter($qb, $query['user_id']))
             );
@@ -102,27 +92,25 @@ class BasketItemAdapter extends AbstractEntityAdapter
         if (isset($query['resource_id'])) {
             $resourceAlias = $this->createAlias();
             $qb->innerJoin(
-                $this->getEntityClass() . '.resource',
+                $alias . '.resource',
                 $resourceAlias
             );
-            $qb->andWhere($qb->expr()->eq(
+            $qb->andWhere($expr->eq(
                 "$resourceAlias.id",
                 $this->createNamedParameter($qb, $query['resource_id']))
             );
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function sortQuery(QueryBuilder $qb, array $query)
     {
-        if (is_string($query['sort_by'])) {
+        if (!empty($query['sort_by'])) {
             $property = $this->getPropertyByTerm($query['sort_by']);
-            $entityClass = $this->getEntityClass();
             if ($property) {
+                $isOldOmeka = \Omeka\Module::VERSION < 2;
+                $alias = $isOldOmeka ? $this->getEntityClass() : 'omeka_root';
                 $resourceAlias = $this->createAlias();
-                $qb->leftJoin("$entityClass.resource", $resourceAlias);
+                $qb->leftJoin("$alias.resource", $resourceAlias);
                 $valuesAlias = $this->createAlias();
                 $qb->leftJoin(
                     "$resourceAlias.values", $valuesAlias,
@@ -141,6 +129,8 @@ class BasketItemAdapter extends AbstractEntityAdapter
     /**
      * Get a property entity by JSON-LD term.
      *
+     * @see \Omeka\Api\Adapter\AbstractResourceEntityAdapter::getPropertyByTerm()
+     *
      * @param string $term
      * @return EntityInterface
      */
@@ -149,20 +139,15 @@ class BasketItemAdapter extends AbstractEntityAdapter
         if (!$this->isTerm($term)) {
             return null;
         }
-
         list($prefix, $localName) = explode(':', $term);
-        $dql = '
-            SELECT p
-            FROM Omeka\Entity\Property p
-            JOIN p.vocabulary v WHERE p.localName = :localName
-                AND v.prefix = :prefix
-        ';
-
+        $dql = 'SELECT p FROM Omeka\Entity\Property p
+        JOIN p.vocabulary v WHERE p.localName = :localName
+        AND v.prefix = :prefix';
         return $this->getEntityManager()
             ->createQuery($dql)
             ->setParameters([
                 'localName' => $localName,
-                'prefix' => $prefix
+                'prefix' => $prefix,
             ])->getOneOrNullResult();
     }
 }

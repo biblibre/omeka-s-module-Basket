@@ -6,12 +6,22 @@ use Zend\View\Helper\AbstractHelper;
 
 class ShowBasketLink extends AbstractHelper
 {
-    protected $button;
+    /**
+     * The default partial view script.
+     */
+    const PARTIAL_NAME = 'common/basket-link';
 
-    public function __invoke()
+    /**
+     * Get the link to the user basket.
+     *
+     * @param array $options Options for the partial.
+     * @return string
+     */
+    public function __invoke(array $options = [])
     {
         $view = $this->getView();
-
-        return $view->partial('basket/basket-link');
+        $template = isset($options['template']) ? $options['template'] : self::PARTIAL_NAME;
+        unset($options['template']);
+        return $view->partial($template, $options);
     }
 }

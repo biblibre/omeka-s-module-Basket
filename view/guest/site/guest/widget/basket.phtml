@@ -1,0 +1,18 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ */
+
+$translate = $this->plugin('translate');
+$url = $this->plugin('url');
+$hyperlink = $this->plugin('hyperlink');
+?>
+
+<ul>
+    <li>
+        <?= $hyperlink(
+            $translate('See content'), // @translate
+            $url('site/guest/basket', [], true)
+        ) ?>
+    </li>
+</ul>

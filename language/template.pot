@@ -1,14 +1,14 @@
-# Translation template for module Solr.
-# Copyright (C) 2016 BibLibre
-# This file is distributed under the same license as the Solr package.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Solr\n"
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-29 15:13+0100\n"
+"POT-Creation-Date: 2020-05-25 00:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,44 +17,93 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: view/public/basket/basket-button.phtml:2
-msgid "Add to basket"
+#: data/scripts/upgrade.php:58 Module.php:71
+#, php-format
+msgid ""
+"This module is deprecated and will not receive new improvements any more. "
+"The module %1$sSelection%2$s replaces it."
 msgstr ""
 
-#: view/public/basket/basket-button.phtml:2
-msgid "Remove from basket"
+#: data/scripts/upgrade.php:64
+msgid "The upgrade from fhis old module to the new one is automatic."
 msgstr ""
 
-#: view/public/basket/basket-link.phtml:1
-#: view/public/basket/index/show.phtml:31
+#: Module.php:132 view/common/basket-item.phtml:26
+#: view/common/basket-link.phtml:11 view/guest/site/guest/basket.phtml:59
 msgid "Basket"
 msgstr ""
 
-#: view/public/basket/index/show.phtml:45
-msgid "items"
+#: src/Controller/Site/BasketController.php:71
+msgid "Already in"
 msgstr ""
 
-#: view/public/basket/index/show.phtml:54
-msgid "files"
+#: src/Generic/AbstractModule.php:598
+#, php-format
+msgid "This module requires the module \"%s\"."
 msgstr ""
 
-#: view/public/omeka/site/item/browse.phtml:10
-msgid "Item Set"
+#: src/Generic/AbstractModule.php:618
+#, php-format
+msgid "This module requires modules \"%s\"."
 msgstr ""
 
-#: view/public/omeka/site/item/browse.phtml:14
-#: view/public/omeka/site/item/browse.phtml:16
-msgid "Items"
+#: src/Generic/AbstractModule.php:686
+#, php-format
+msgid ""
+"The module \"%s\" was automatically deactivated because the dependencies are "
+"unavailable."
 msgstr ""
 
-#: view/public/omeka/site/item/browse.phtml:20
-msgid "Advanced search"
+#: view/common/basket-button.phtml:12
+msgid "Add to basket"
 msgstr ""
 
-#: view/public/omeka/site/item/show.phtml:6
-msgid "Item"
+#: view/common/basket-button.phtml:13
+msgid "Remove from basket"
 msgstr ""
 
-#: view/public/omeka/site/item/show.phtml:11
-msgid "Item Sets"
+#: view/common/basket-selection.phtml:31
+msgid "Remove from selection"
+msgstr ""
+
+#: view/common/basket-selection.phtml:32
+msgid "Selected resources"
+msgstr ""
+
+#: view/common/basket-selection.phtml:42
+msgid "No selection"
+msgstr ""
+
+#: view/common/basket-selection.phtml:46
+msgid "Download basket"
+msgstr ""
+
+#: view/guest/site/guest/basket.phtml:62
+#, php-format
+msgid "%d items, %d media"
+msgstr ""
+
+#: view/guest/site/guest/basket.phtml:110
+msgid "The basket is empty."
+msgstr ""
+
+#: view/guest/site/guest/widget/basket.phtml:14
+msgid "See content"
+msgstr ""
+
+#: src/Form/SiteSettingsFieldset.php:12
+msgid "Basket module"
+msgstr ""
+
+#: src/Form/SiteSettingsFieldset.php:21
+msgid "Enable session basket for visitors"
+msgstr ""
+
+#: src/Form/SiteSettingsFieldset.php:22
+msgid "The selection is automatically saved for logged users."
+msgstr ""
+
+#: src/Site/Navigation/Link/Basket.php:23
+#, php-format
+msgid "Invalid navigation: link without label (%s)"
 msgstr ""

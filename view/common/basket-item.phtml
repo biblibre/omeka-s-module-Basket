@@ -1,0 +1,48 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SiteRepresentation $site
+ * @var \Omeka\Api\Representation\ItemRepresentation $resource
+ */
+
+// For a better display, it is recommended to edit the original item/show
+// template of the theme, and any other one, to include the link to update the
+// basket and to skip this partial. This partial can be skipped automatically
+// with module BlocksDisposition.
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
+$updateBasketLink = $plugins->get('updateBasketLink');
+
+$this->headLink()
+    ->appendStylesheet($this->assetUrl('css/basket.css', 'Basket'));
+$this->headScript()
+    ->appendFile($this->assetUrl('js/basket.js', 'Basket'), 'text/javascript', ['defer' => 'defer']);
+
+$medias = $resource->getControllerName() === 'item' ? $resource->media() : [];
+?>
+
+<div class="basket">
+    <h2><?= $translate('Basket') // @translate ?></h2>
+    <?php if (count($medias)): ?>
+    <h3><?= $translate('Item') ?></h3>
+    <?php endif; ?>
+    <div class="item resource">
+        <?= $updateBasketLink($resource) ?>
+        <?= $resource->linkPretty() ?>
+    </div>
+    <?php if (count($medias)): ?>
+    <h3><?= $translate('Media') ?></h3>
+    <div class="media-list">
+        <?php foreach ($medias as $media): ?>
+        <div class="media resource">
+            <?= $updateBasketLink($media) ?>
+            <?= $media->linkPretty() ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php // The session basket can be moved anywhere via the main layout. ?>
+    <?= $this->partial('common/basket-selection') ?>
+</div>

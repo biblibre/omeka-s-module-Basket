@@ -1,0 +1,46 @@
+#content .basket .media.resource {
+    text-align: inherit;
+}
+#content .media.resource:hover {
+    border-bottom: 1px solid transparent;
+}
+a.basket-list-toggle:link,
+a.basket-list-toggle:visited {
+    color: #000;
+    text-decoration: none;
+}
+.basket-list-toggle:after {
+    content:" ⊞";
+}
+.basket-list-toggle.active:after {
+    content:" ⊟";
+}
+span.basket-delete:after {
+    content:"X";
+}
+.basket-empty,
+.basket-list {
+    display: none;
+}
+.basket-empty.active,
+.basket-list.active {
+    display: block;
+}
+span.basket-delete {
+    cursor: pointer;
+    margin-left: 12px;
+}
+.basket #content .media.resource,
+#content .basket .media.resource {
+    display: inherit;
+    text-align: inherit;
+    vertical-align: inherit;
+    margin-right: inherit;
+}
+/* Note: regular font awesome icons are no more free. */
+.basket-update.selected {
+     color:black;
+}
+.basket-update.unselected {
+     color:gray;
+}

@@ -1,98 +1,138 @@
 <?php
-
 namespace Basket;
 
-use Omeka\Module\AbstractModule;
-use Zend\ServiceManager\ServiceLocatorInterface;
+if (!class_exists(\Generic\AbstractModule::class)) {
+    require file_exists(dirname(__DIR__) . '/Generic/AbstractModule.php')
+        ? dirname(__DIR__) . '/Generic/AbstractModule.php'
+        : __DIR__ . '/src/Generic/AbstractModule.php';
+}
+
+use Generic\AbstractModule;
+use Zend\EventManager\Event;
+use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
+use Zend\Session\Container;
 
 /**
  * Basket.
  *
- * Allow basket
- *
  * @copyright Biblibre, 2016
+ * @copyright Daniel Berthereau 2019-2020
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 class Module extends AbstractModule
 {
-    public function getConfig()
-    {
-        return include __DIR__ . '/config/module.config.php';
-    }
+    const NAMESPACE = __NAMESPACE__;
+
+    // Guest is an optional dependency, not a required one.
+    // protected $dependency = 'Guest';
 
     public function onBootstrap(MvcEvent $event)
     {
         parent::onBootstrap($event);
 
-        $acl = $this->getServiceLocator()->get('Omeka\Acl');
-        foreach ($acl->getRoles() as $role) {
-            $acl->allow($role, 'Basket\Controller\Index');
+        $services = $this->getServiceLocator();
+        $acl = $services->get('Omeka\Acl');
+
+        // Since Omeka 1.4, modules are ordered, so Guest come after Basket.
+        // See \Guest\Module::onBootstrap().
+        if (!$acl->hasRole('guest')) {
+            $acl->addRole('guest');
         }
+
+        $roles = $acl->getRoles();
+
+        $acl
+            ->allow(
+                $roles,
+                [
+                    Entity\BasketItem::class,
+                    Api\Adapter\BasketItemAdapter::class,
+                    'Basket\Controller\Site\Basket',
+                    'Basket\Controller\Site\GuestBoard',
+                ]
+            )
+            // This right is checked in controller in order to avoid to check
+            // the site here.
+            ->allow(
+                null,
+                'Basket\Controller\Site\Basket'
+            )
+        ;
     }
 
-    public function install(ServiceLocatorInterface $serviceLocator)
+    protected function preInstall()
     {
-        $connection = $serviceLocator->get('Omeka\Connection');
-        $sql = '
-            CREATE TABLE basket_item (
-                id INT AUTO_INCREMENT NOT NULL,
-                user_id INT NOT NULL,
-                resource_id INT NOT NULL,
-                created DATETIME NOT NULL,
-                PRIMARY KEY(id),
-                INDEX IDX_D4943C2BA76ED395 (user_id),
-                INDEX IDX_D4943C2B89329D25 (resource_id),
-                CONSTRAINT FK_D4943C2BA76ED395
-                  FOREIGN KEY (user_id) REFERENCES user (id)
-                  ON DELETE CASCADE,
-                CONSTRAINT FK_D4943C2B89329D25
-                  FOREIGN KEY (resource_id) REFERENCES resource (id)
-                  ON DELETE CASCADE
-            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB;
-        ';
-        $connection->exec($sql);
+        $services = $this->getServiceLocator();
+        $translator = $services->get('MvcTranslator');
+        $messenger = new Messenger;
+
+        $message = new Message(sprintf(
+            $translator->translate('This module is deprecated and will not receive new improvements any more. The module %1$sSelection%2$s replaces it.'), // @translate
+            '<a href="https://github.com/Daniel-KM/Omeka-S-module-Selection" target="_blank">', '</a>'
+        ));
+        $message->setEscapeHtml(false);
+        $messenger->addWarning($message);
     }
 
-    public function upgrade($oldVersion, $newVersion, ServiceLocatorInterface $serviceLocator)
+    public function attachListeners(SharedEventManagerInterface $sharedEventManager)
     {
-        $connection = $serviceLocator->get('Omeka\Connection');
-
-        if (version_compare($oldVersion, '0.2.0', '<')) {
-            $connection->exec('
-                RENAME TABLE basket TO basket_item
-            ');
-            $connection->exec('
-                ALTER TABLE basket_item
-                ADD COLUMN resource_id INT NULL AFTER media_id
-            ');
-            $connection->exec('
-                UPDATE basket_item
-                SET resource_id = COALESCE(item_id, media_id)
-            ');
-            $connection->exec('
-                ALTER TABLE basket_item
-                MODIFY COLUMN resource_id INT NOT NULL
-            ');
-            $connection->exec('
-                ALTER TABLE basket_item
-                DROP COLUMN item_id,
-                DROP COLUMN media_id
-            ');
-            $connection->exec('
-                ALTER TABLE basket_item
-                MODIFY COLUMN user_id INT NOT NULL
-                ADD INDEX IDX_D4943C2BA76ED395 (user_id),
-                ADD INDEX IDX_D4943C2B89329D25 (resource_id),
-                ADD CONSTRAINT FK_D4943C2BA76ED395 FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE,
-                ADD CONSTRAINT FK_D4943C2B89329D25 FOREIGN KEY (resource_id) REFERENCES resource (id) ON DELETE CASCADE
-            ');
+        $controllers = [
+            'Omeka\Controller\Site\Item',
+            'Omeka\Controller\Site\ItemSet',
+            'Omeka\Controller\Site\Media',
+        ];
+        foreach ($controllers as $controller) {
+            $sharedEventManager->attach(
+                $controller,
+                'view.show.after',
+                [$this, 'handleViewShowAfter']
+            );
         }
+
+        // Guest integration.
+        $sharedEventManager->attach(
+            \Guest\Controller\Site\GuestController::class,
+            'guest.widgets',
+            [$this, 'handleGuestWidgets']
+        );
+
+        $sharedEventManager->attach(
+            \Omeka\Form\SiteSettingsForm::class,
+            'form.add_elements',
+            [$this, 'handleSiteSettings']
+        );
     }
 
-    public function uninstall(ServiceLocatorInterface $serviceLocator)
+    public function handleViewShowAfter(Event $event)
     {
-        $connection = $serviceLocator->get('Omeka\Connection');
-        $connection->exec('DROP TABLE IF EXISTS basket_item');
+        $view = $event->getTarget();
+        $siteSetting = $view->getHelperPluginManager()->get('siteSetting');
+
+        $user = $view->identity();
+        $allowVisitor = $siteSetting('basket_visitor_allow', true);
+        if (!$user && !$allowVisitor) {
+            return;
+        }
+
+        $containerBasket = $this->getServiceLocator()->get('ControllerPluginManager')->get('containerBasket');
+        $containerBasket();
+
+        echo $view->partial('common/basket-item');
+    }
+
+    public function handleGuestWidgets(Event $event)
+    {
+        $widgets = $event->getParam('widgets');
+        $helpers = $this->getServiceLocator()->get('ViewHelperManager');
+        $translate = $helpers->get('translate');
+        $partial = $helpers->get('partial');
+
+        $widget = [];
+        $widget['label'] = $translate('Basket'); // @translate
+        $widget['content'] = $partial('guest/site/guest/widget/basket');
+        $widgets['basket'] = $widget;
+
+        $event->setParam('widgets', $widgets);
     }
 }
